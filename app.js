@@ -1,7 +1,8 @@
 (() => {
 "use strict";
 const cfg=window.PYKLN_CONFIG;
-const state={page:"home",tab:"live",tournaments:[],matches:[],teams:[],error:null};
+const state={page:"home",tab:"live",tournaments:[],matches:[],teams:[],error:null,weekend:"8",history:{}};
+fetch("weekend-history.json").then(r=>r.json()).then(d=>{state.history=d;render()}).catch(console.warn);
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const status=v=>["live","completed","upcoming"].includes(v)?v:"upcoming";
@@ -33,16 +34,20 @@ $("matchList").innerHTML=matchSection();
 const open=state.tournaments.filter(t=>t.registration_open);$("registrationList").innerHTML=open.length?open.map(t=>eventCard(t,true)).join(""):empty("No registrations open","When the next PYKLN tournament opens for registration, it will appear here.");
 $("tournamentList").innerHTML=state.tournaments.length?state.tournaments.slice().sort((a,b)=>String(b.event_date).localeCompare(String(a.event_date))).slice(0,4).map(t=>eventCard(t)).join(""):empty("Tournament calendar is ready","Your tournaments will appear as soon as they are added to Supabase.");
 }
+function weekendPicker(){return `<div class="weekend-picker"><label for="weekendSelect">SELECT WEEKEND NIGHTS</label><select id="weekendSelect"><option value="8" ${state.weekend==='8'?'selected':''}>Weekend Nights 8 — Latest</option>${[7,6,5,4,3,2].map(n=>`<option value="${n}" ${state.weekend===String(n)?'selected':''}>Weekend Nights ${n}</option>`).join('')}</select></div>`}
+function historicalMatches(){const event=state.history[state.weekend];if(!event)return empty("Scorecard not yet available","Upload the Weekend Nights scorecard to see results here.");const completed=event.matches.filter(m=>typeof m.score1==='number'&&typeof m.score2==='number');return `<div class="history-heading"><h2>${esc(event.name)}</h2><p>${completed.length} recorded completed games · ${event.teams.length} teams</p></div>${completed.length?`<div class="match-grid">${completed.map(m=>`<article class="match-card"><div class="meta"><span>${esc(m.stage)} · ${esc(m.round||'')}</span><span class="pill">COMPLETED</span></div><div class="teams"><div class="team"><span>${esc(m.team1)}</span><strong>${m.score1}</strong></div><div class="team"><span>${esc(m.team2)}</span><strong>${m.score2}</strong></div></div>${m.winner?`<div class="match-footer">WINNER: ${esc(m.winner)}</div>`:''}</article>`).join('')}</div>`:empty('No completed game scores found','This scorecard does not contain confirmed completed game scores.')}`}
+function historyTable(title,columns,records){if(!records?.length)return '';return `<section class="section history-table-section"><div class="section-heading"><div><div class="eyebrow">TOURNAMENT RECORDS</div><h2>${esc(title)}</h2></div></div><div class="history-table-scroll"><table class="history-table"><thead><tr>${columns.map(c=>`<th>${esc(c[0])}</th>`).join('')}</tr></thead><tbody>${records.map(r=>`<tr>${columns.map(c=>`<td>${esc(r[c[1]]??'—')}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>`}
+function historyDetails(){const event=state.history[state.weekend];if(!event)return '';let result='';if(event.winners){result+=`<section class="history-winners"><h2>Weekend Nights ${esc(state.weekend)} — Winners</h2><div class="history-winner-grid">${[['GOLD','gold'],['SILVER','silver'],['BRONZE','bronze']].map(([label,key])=>`<div class="history-winner"><small>${label}</small><strong>${esc(event.winners[key])}</strong></div>`).join('')}</div></section>`}if(event.standings)result+=historyTable('Final Team Standings',[['#','rank'],['Team','team'],['Pool','pool'],['Played','played'],['Wins','wins'],['Draws','draws'],['Losses','losses'],['Points','points'],['Match Wins','matchWins'],['PD','pd']],event.standings);if(event.playerLeaderboard)result+=historyTable('Weekend Nights 3 — Player Leaderboard',[['#','rank'],['Player','player'],['Matches','matches'],['Wins','wins'],['Losses','losses'],['PF','pf'],['PA','pa'],['PD','pd'],['Win %','winPct']],event.playerLeaderboard);if(event.monthlyPlayerRankings)result+=historyTable('Monthly Player Rankings (as shown on WN3 dashboard)',[['#','rank'],['Player','player'],['Total MP','matches'],['Wins','wins'],['Losses','losses'],['PF','pf'],['PA','pa'],['PD','pd'],['Win %','winPct'],['WN3 Wins','wn3Wins']],event.monthlyPlayerRankings);return result}
 function renderOther(){
 const p=state.page;
 const headings={profile:["PLAYER PROFILE","Your pickleball identity"],tournaments:["TOURNAMENTS","Every event. One club."],scores:["SCORE CENTER","Every point matters."],leaderboard:["LEADERBOARD","Rise through the ranks."],register:["REGISTRATION","Join the next tournament."]};
 const [label,title]=headings[p];
 let content="";
-if(p==="tournaments")content=`<div class="event-grid">${state.tournaments.length?state.tournaments.map(t=>eventCard(t)).join(""):empty("No tournaments yet","Events will appear once they are created in Supabase.")}</div>`;
-if(p==="scores")content=`<div class="tabs"><button data-tab="live" class="${state.tab==="live"?"selected":""}">Live</button><button data-tab="completed" class="${state.tab==="completed"?"selected":""}">Completed</button><button data-tab="upcoming" class="${state.tab==="upcoming"?"selected":""}">Upcoming</button></div><div class="match-grid">${matchSection()}</div>`;
+if(p==="tournaments")content=weekendPicker()+historyDetails()+(state.weekend==="3"?"":historicalMatches())+`<div class="section-heading"><h2>Upcoming & live tournaments</h2></div><div class="event-grid">${state.tournaments.length?state.tournaments.map(t=>eventCard(t)).join(""):empty("No tournaments yet","Events will appear once they are created in Supabase.")}</div>`;
+if(p==="scores")content=weekendPicker()+`<div class="history-heading"><h2>Completed matches — tournament history</h2></div>`+(state.weekend==="3"?historyDetails():historicalMatches())+`<div class="section-heading"><h2>Live score center</h2></div><div class="tabs"><button data-tab="live" class="${state.tab==="live"?"selected":""}">Live</button><button data-tab="completed" class="${state.tab==="completed"?"selected":""}">Completed</button><button data-tab="upcoming" class="${state.tab==="upcoming"?"selected":""}">Upcoming</button></div><div class="match-grid">${matchSection()}</div>`;
 if(p==="register"){const open=state.tournaments.filter(t=>t.registration_open);content=`<div class="notice">Registration submissions are not enabled in V1. Secure player authentication, registration forms and payment rules will be added in the next release. No payment should be made through this preview.</div><br><div class="event-grid">${open.length?open.map(t=>eventCard(t,true)).join(""):empty("Registration currently closed","Upcoming registration opportunities will appear here.")}</div>`}
 if(p==="profile")content='<div id="profileContent"></div>';
-if(p==="leaderboard")content='<div class="notice">The individual player leaderboard will become available after verified match results, player rosters and scoring rules are connected. No rankings are fabricated in this preview.</div>';
+if(p==="leaderboard")content=weekendPicker()+historyDetails()+(state.weekend==="3"?'':'<div class="notice">Individual player rankings are available for Weekend Nights 3. Other weekends need verified player-level statistics before rankings can be shown.</div>');
 $("main").innerHTML=`<div class="page-intro"><div class="eyebrow">${label}</div><h1>${title}</h1><p>PYKLN CLUB · VISAKHAPATNAM</p></div>${content}`;
 if(p==="profile")window.PYKLN_AUTH?.renderProfile();
 }
@@ -51,6 +56,7 @@ $("pageName").textContent=state.page.charAt(0).toUpperCase()+state.page.slice(1)
 document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===state.page));
 if(state.page==="home")renderHome();else renderOther();
 }
+document.addEventListener("change",e=>{if(e.target.id==="weekendSelect"){state.weekend=e.target.value;render()}});
 document.addEventListener("click",e=>{
 const tab=e.target.closest("[data-tab]");if(tab){state.tab=tab.dataset.tab;render();return}
 const go=e.target.closest("[data-go]");if(go){state.page=go.dataset.go;render();scrollTo(0,0);return}
