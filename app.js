@@ -42,13 +42,30 @@ function historyTable(title,columns,records){if(!records?.length)return '';retur
 function sheetCategory(name){const n=name.toLowerCase();if(/pool|round robin|cross-pool|tie |fixture/.test(n))return 'Pool & Round Robin';if(/quarter|semi|final|bracket|bronze|gold silver/.test(n))return 'Knockout & Finals';if(/player|team|roster|list/.test(n))return 'Players & Teams';if(/leaderboard|ranking|standing/.test(n))return 'Rankings & Standings';return 'Overview & Data'}
 function workbookSection(){
  const sheets=state.workbooks[state.weekend];
- if(!sheets)return state.weekend==='3'?'<div class="notice">WN3 records are sourced from the supplied dashboard screenshot. An Excel workbook was not supplied for this event.</div>':empty('Loading original workbook tabs','The original Excel sheets will appear here.');
+ if(!sheets)return state.weekend==='3'?'':empty('Loading tournament data','The scorecard sections will appear here.');
  const selected=Math.min(state.sheetIndex[state.weekend]||0,sheets.length-1),sh=sheets[selected];
- const groups=[...new Set(sheets.map(s=>sheetCategory(s.name)))];
- const buttons=groups.map(group=>`<div class="sheet-group"><div class="sheet-group-label">${esc(group)}</div><div class="sheet-buttons">${sheets.map((s,i)=>sheetCategory(s.name)===group?`<button class="sheet-button ${i===selected?'selected':''}" data-sheet="${i}">${esc(s.name)}</button>`:'').join('')}</div></div>`).join('');
- const cols=Math.min(65,Math.max(1,...sh.rows.map(r=>r.v.length)));
- const rows=sh.rows.map(r=>`<tr><th class="row-index">${r.r}</th>${Array.from({length:cols},(_,i)=>`<td>${esc(r.v[i]??'')}</td>`).join('')}</tr>`).join('');
- return `<section class="section workbook-section"><div class="section-heading"><div><div class="eyebrow">ORIGINAL EXCEL SCORECARD</div><h2>All workbook sections · WN${esc(state.weekend)}</h2></div></div><p class="workbook-note">Each tab is preserved separately, including player names, recorded match scores, fixtures, brackets and rankings. Formula results without stored values are left blank rather than guessed.</p><div class="sheet-navigation">${buttons}</div><div class="sheet-content"><div class="sheet-title"><h3>${esc(sh.name)}</h3><span>${sh.rows.length} populated rows</span></div><div class="history-table-scroll"><table class="history-table raw-sheet"><thead><tr><th>#</th>${Array.from({length:cols},(_,i)=>{let x=i+1,s='';while(x){x--;s=String.fromCharCode(65+x%26)+s;x=Math.floor(x/26)}return `<th>${s}</th>`}).join('')}</tr></thead><tbody>${rows||`<tr><td colspan="${cols+1}">No populated cells recorded in this worksheet.</td></tr>`}</tbody></table></div></div></section>`;
+ const category=state.sheetCategory||'All sections';
+ const categories=['All sections',...new Set(sheets.map(s=>sheetCategory(s.name)))];
+ const options=categories.map(c=>`<option value="${esc(c)}" ${c===category?'selected':''}>${esc(c)}</option>`).join('');
+ const filtered=sheets.map((s,i)=>({s,i})).filter(x=>category==='All sections'||sheetCategory(x.s.name)===category);
+ const sectionOptions=filtered.map(({s,i})=>`<option value="${i}" ${i===selected?'selected':''}>${esc(s.name)}</option>`).join('');
+ const search=(state.sheetSearch||'').trim().toLowerCase();
+ const nonempty=v=>v!==null&&v!==undefined&&String(v).trim()!=='';
+ const entries=sh.rows.map(row=>({r:row.r,values:row.v.map((v,i)=>({i,v})).filter(x=>nonempty(x.v))})).filter(x=>x.values.length);
+ const matched=entries.filter(x=>!search||x.values.some(z=>String(z.v).toLowerCase().includes(search)));
+ const rowCard=x=>{
+  const cells=x.values;
+  const first=cells[0],second=cells[1];
+  const title=first&&String(first.v).length<=90?first.v:`Record ${x.r}`;
+  const fields=(first&&title===first.v?cells.slice(1):cells).filter(z=>nonempty(z.v));
+  return `<article class="score-record"><div class="record-top"><strong>${esc(title)}</strong><span>Entry ${x.r}</span></div><div class="record-fields">${fields.map((z,i)=>`<div class="record-field"><small>${esc(z.i===0?'Detail':`Field ${z.i+1}`)}</small><span>${esc(z.v)}</span></div>`).join('')||'<span class="record-single">Section heading</span>'}</div></article>`;
+ };
+ const cards=matched.map(rowCard).join('')||empty('No matching records','Try another player, team or score.');
+ return `<section class="section workbook-section"><div class="section-heading"><div><div class="eyebrow">TOURNAMENT SCORECARD</div><h2>Explore WN${esc(state.weekend)} results</h2></div></div>
+ <div class="score-filter-panel"><label>Stage / Category<select id="scoreCategory">${options}</select></label><label>Scorecard Section<select id="scoreSheet">${sectionOptions}</select></label><label>Find player, team or score<input id="scoreSearch" type="search" placeholder="Search within this section" value="${esc(state.sheetSearch||'')}"></label><button class="outline score-clear" data-clear-score="1">Clear filters</button></div>
+ <div class="score-section-header"><div><span class="eyebrow">${esc(sheetCategory(sh.name))}</span><h3>${esc(sh.name)}</h3></div><span>${matched.length} of ${entries.length} records</span></div>
+ <p class="workbook-note">Readable scorecard view from the original Excel data. Each populated record is preserved; unnamed columns are shown as fields rather than guessed as players or scores.</p>
+ <div class="score-record-grid">${cards}</div></section>`;
 }
 function historyDetails(){const event=state.history[state.weekend];if(!event)return '';let result='';if(event.winners){result+=`<section class="history-winners"><h2>Weekend Nights ${esc(state.weekend)} — Winners</h2><div class="history-winner-grid">${[['GOLD','gold'],['SILVER','silver'],['BRONZE','bronze']].map(([label,key])=>`<div class="history-winner"><small>${label}</small><strong>${esc(event.winners[key])}</strong></div>`).join('')}</div></section>`}if(event.standings)result+=historyTable('Final Team Standings',[['#','rank'],['Team','team'],['Pool','pool'],['Played','played'],['Wins','wins'],['Draws','draws'],['Losses','losses'],['Points','points'],['Match Wins','matchWins'],['PD','pd']],event.standings);if(event.playerLeaderboard)result+=historyTable('Weekend Nights 3 — Player Leaderboard',[['#','rank'],['Player','player'],['Matches','matches'],['Wins','wins'],['Losses','losses'],['PF','pf'],['PA','pa'],['PD','pd'],['Win %','winPct']],event.playerLeaderboard);if(event.monthlyPlayerRankings)result+=historyTable('Monthly Player Rankings (as shown on WN3 dashboard)',[['#','rank'],['Player','player'],['Total MP','matches'],['Wins','wins'],['Losses','losses'],['PF','pf'],['PA','pa'],['PD','pd'],['Win %','winPct'],['WN3 Wins','wn3Wins']],event.monthlyPlayerRankings);return result}
 function renderOther(){
@@ -70,8 +87,10 @@ document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",
 if(state.page==="home")renderHome();else renderOther();
 }
 document.addEventListener("change",e=>{if(e.target.id==="weekendSelect"){state.weekend=e.target.value;render()}});
+document.addEventListener('change',e=>{if(e.target.id==='scoreCategory'){state.sheetCategory=e.target.value;const arr=state.workbooks[state.weekend]||[];const i=arr.findIndex(x=>state.sheetCategory==='All sections'||sheetCategory(x.name)===state.sheetCategory);state.sheetIndex[state.weekend]=Math.max(0,i);state.sheetSearch='';render()}if(e.target.id==='scoreSheet'){state.sheetIndex[state.weekend]=Number(e.target.value);state.sheetSearch='';render()}if(e.target.id==='scoreSearch'){state.sheetSearch=e.target.value;render()}});
+document.addEventListener('input',e=>{if(e.target.id==='scoreSearch'){state.sheetSearch=e.target.value;const q=state.sheetSearch.toLowerCase();document.querySelectorAll('.score-record').forEach(card=>{card.hidden=!card.textContent.toLowerCase().includes(q)});}});
 document.addEventListener("click",e=>{
-const sheet=e.target.closest("[data-sheet]");if(sheet){state.sheetIndex[state.weekend]=Number(sheet.dataset.sheet);render();return}
+const clear=e.target.closest("[data-clear-score]");if(clear){state.sheetCategory="All sections";state.sheetIndex[state.weekend]=0;state.sheetSearch="";render();return}const sheet=e.target.closest("[data-sheet]");if(sheet){state.sheetIndex[state.weekend]=Number(sheet.dataset.sheet);render();return}
 const tab=e.target.closest("[data-tab]");if(tab){state.tab=tab.dataset.tab;render();return}
 const go=e.target.closest("[data-go]");if(go){state.page=go.dataset.go;render();scrollTo(0,0);return}
 const nav=e.target.closest("[data-page]");if(nav){state.page=nav.dataset.page;$("sidebar").classList.remove("open");render();scrollTo(0,0)}
