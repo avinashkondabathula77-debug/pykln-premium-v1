@@ -41,9 +41,10 @@ let content="";
 if(p==="tournaments")content=`<div class="event-grid">${state.tournaments.length?state.tournaments.map(t=>eventCard(t)).join(""):empty("No tournaments yet","Events will appear once they are created in Supabase.")}</div>`;
 if(p==="scores")content=`<div class="tabs"><button data-tab="live" class="${state.tab==="live"?"selected":""}">Live</button><button data-tab="completed" class="${state.tab==="completed"?"selected":""}">Completed</button><button data-tab="upcoming" class="${state.tab==="upcoming"?"selected":""}">Upcoming</button></div><div class="match-grid">${matchSection()}</div>`;
 if(p==="register"){const open=state.tournaments.filter(t=>t.registration_open);content=`<div class="notice">Registration submissions are not enabled in V1. Secure player authentication, registration forms and payment rules will be added in the next release. No payment should be made through this preview.</div><br><div class="event-grid">${open.length?open.map(t=>eventCard(t,true)).join(""):empty("Registration currently closed","Upcoming registration opportunities will appear here.")}</div>`}
-if(p==="profile")content='<div class="notice">Player sign-in and DUPR-linked profiles are planned for the next version. This preview does not collect passwords or personal details.</div>';
+if(p==="profile")content='<div id="profileContent"></div>';
 if(p==="leaderboard")content='<div class="notice">The individual player leaderboard will become available after verified match results, player rosters and scoring rules are connected. No rankings are fabricated in this preview.</div>';
 $("main").innerHTML=`<div class="page-intro"><div class="eyebrow">${label}</div><h1>${title}</h1><p>PYKLN CLUB · VISAKHAPATNAM</p></div>${content}`;
+if(p==="profile")window.PYKLN_AUTH?.renderProfile();
 }
 function render(){
 $("pageName").textContent=state.page.charAt(0).toUpperCase()+state.page.slice(1);
@@ -55,6 +56,8 @@ const tab=e.target.closest("[data-tab]");if(tab){state.tab=tab.dataset.tab;rende
 const go=e.target.closest("[data-go]");if(go){state.page=go.dataset.go;render();scrollTo(0,0);return}
 const nav=e.target.closest("[data-page]");if(nav){state.page=nav.dataset.page;$("sidebar").classList.remove("open");render();scrollTo(0,0)}
 });
+window.PYKLN_RENDER_PROFILE=()=>{if(state.page==="profile")window.PYKLN_AUTH?.renderProfile()};
+$("accountBtn").addEventListener("click",()=>{state.page="profile";render();scrollTo(0,0)});
 $("menuToggle").addEventListener("click",()=>$("sidebar").classList.toggle("open"));
 $("refreshBtn").addEventListener("click",sync);
 $("year").textContent=new Date().getFullYear();

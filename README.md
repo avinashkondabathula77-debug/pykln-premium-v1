@@ -1,45 +1,25 @@
-# PYKLN Club — Premium Sports Dashboard V1
+# PYKLN Premium Sports Dashboard — V2
 
-A **new design** (not the old Firebase UI), built with plain HTML/CSS/JavaScript and the Supabase REST API. Suitable for static hosting on Cloudflare Pages.
+Retains the V1 charcoal/lime sports dashboard, Supabase match/tournament display and 20-second polling. Adds player authentication and profile management.
 
-## Included
-- Responsive premium charcoal/lime homepage and left navigation
-- Live / Completed / Upcoming match tabs
-- Tournament calendar and open-registration announcements
-- Reads real Supabase `tournaments`, `matches`, `teams` data
-- Auto refresh every 20 seconds while the page is visible
-- Empty states when no records exist; **no fabricated scores**
-- Player profile, leaderboard and registration placeholders (not yet operational)
+## New features
+- Google OAuth login (requires enabling Google provider in Supabase)
+- Email/password signup and login, with email verification when enabled
+- Mobile SMS OTP sign-in (requires enabling Phone auth and an SMS provider)
+- Player profile: first name, last name, DUPR ID, phone and profile picture
+- Supabase Auth session persistence and private per-user profile rows
+- Profile photo upload, max 2 MB (JPG, PNG, WebP)
 
-## Supabase
-The project URL and **publishable** key are in `config.js`. This key is designed to be public. **Never add `service_role`, `sb_secret_`, database passwords, or personal access tokens to website code.**
+## Required setup BEFORE using sign-in
+1. In Supabase SQL Editor, run `SUPABASE_SETUP.sql` once. It creates the `player_profiles` table, RLS policies, signup trigger and avatar storage bucket.
+2. Supabase Dashboard → Authentication → URL Configuration: set Site URL to your Cloudflare Pages domain (e.g. `https://pykln-premium-v1.pages.dev`) and add it to Redirect URLs. Also add any custom domain and preview domains you actually use.
+3. Authentication → Providers → Email: enable email/password and decide whether to require email confirmation. Set up a production SMTP provider before public launch.
+4. Authentication → Providers → Google: enable provider and configure Google Cloud OAuth credentials and the Supabase callback URL shown by Supabase.
+5. Authentication → Providers → Phone: enable phone sign-in, configure an SMS provider and check delivery/OTP rate limits for India. SMS OTP is not functional until this is done.
+6. Upload **individual files** (`index.html`, `styles.css`, `app.js`, `auth.js`, `config.js`, `README.md`, `SUPABASE_SETUP.sql`) to the GitHub repository root. Cloudflare Pages: framework `None`, blank build command, output directory `/` (root).
+7. Test email signup and verification, Google OAuth, SMS OTP, profile save and photo upload using test accounts.
 
-Uses these existing columns:
-- tournaments: id, name, event_date, venue, status, registration_open
-- matches: id, tournament_id, team1_id, team2_id, court_number, score1, score2, status, winner_id
-- teams: id, name, tournament_id
+## Security
+`config.js` includes a browser-safe Supabase publishable key. Never upload Supabase secret/service_role keys, OAuth client secrets, SMS provider secrets or private tokens. `player_profiles` uses owner-only row-level security. Avatar images are public if the URL is known; do not upload sensitive images. Profile phone numbers and DUPR IDs are not publicly listed by this frontend.
 
-For public display, the existing RLS SELECT policies on these three tables must be enabled. Keep `players` and `registrations` private. This frontend **does not** create records or change scores.
-
-## Local preview
-Unzip, then run a static HTTP server from the folder, e.g. `python -m http.server 8000`, and open http://localhost:8000. Opening `index.html` directly may also work, but a server is preferred.
-
-## Deploy on Cloudflare Pages
-1. Create a **new GitHub repository**, e.g. `pykln-premium-v1` (recommended, to avoid overwriting your existing Firebase project).
-2. Upload the *contents* of this folder to the repository root.
-3. Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git.
-4. Select your repository. Framework preset: **None**. Build command: **leave blank**. Build output directory: `/` (repository root).
-5. Deploy and open the `*.pages.dev` URL. Cloudflare UI wording may vary.
-
-## Security and next release
-- Add Supabase Auth and database-enforced organiser/scorer role policies before implementing writes.
-- Add registration forms, validation, and secure payment handling.
-- Define player membership, individual ranking calculations and score finalisation.
-- Import existing tournament history from trusted source records.
-- Optionally add Supabase Realtime subscriptions; V1 uses polling.
-- Do not enable broad anonymous INSERT/UPDATE/DELETE policies.
-
-## Troubleshooting
-If you see “Connection unavailable,” verify your project is active, the publishable key is correct, and the RLS read policies are present. Check browser developer console/network for exact HTTP errors.
-
-This is a **functional read-only first version**, not a complete production tournament management system.
+This version **does not** grant organiser/scorer privileges or implement registrations, payments, or score edits. Those require separate database-enforced role policies. Live score polling remains read-only.
