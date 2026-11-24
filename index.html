@@ -1,19 +1,19 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#081629"><title>PYKLN CLUB | Live Pickleball</title>
-<link rel="stylesheet" href="styles.css?v=navygold-20261123"></head>
+<link rel="stylesheet" href="styles.css?v=20261124welcome"><script src="theme.js?v=1"></script><link rel="stylesheet" href="welcome.css?v=1"><script defer src="welcome.js?v=1"></script></head>
 <body>
-<div class="shell">
-<aside class="sidebar" id="sidebar"><div class="brand"><span class="brand-mark">P<span>●</span></span><div><strong>PYKLN</strong><small>CLUB · VIZAG</small></div></div>
+<div id="layoutFrame"><div class="shell">
+<aside class="sidebar" id="sidebar"><div class="brand"><img class="club-logo" src="pykln-logo.jpg" alt="PYKLN Club logo"><div><strong>PYKLN</strong><small>CLUB · VIZAG</small></div></div>
 <div class="nav-label">CLUB MENU</div><nav id="nav">
 <button data-page="home" class="active">⌂ <span>Home</span></button>
-<button data-page="profile">♙ <span>Profile</span></button>
-<button data-page="tournaments">▦ <span>Tournaments</span></button>
-<button data-page="scores">◉ <span>Scores</span></button>
+<button data-page="profile">♙ <span>My Profile</span></button>
+<button data-page="tournaments">▦ <span>Weekend Nights</span></button>
+<button data-page="scores">◉ <span>Matches</span></button>
 <button data-page="leaderboard">▥ <span>Leaderboard</span></button>
 <button data-page="register">✎ <span>Register</span></button>
-<button data-page="players">♙ <span>Players</span></button><button data-page="livefixtures">◉ <span>Live fixtures</span></button><button data-page="staff">⚙ <span>Organiser</span></button></nav><div class="sidebar-bottom"><span class="online-dot"></span> Powered by Supabase <small>PYKLN Premium · Navy & Gold</small></div></aside>
-<div class="main-wrap"><header class="topbar"><button id="menuToggle" class="icon-btn" aria-label="Toggle menu">☰</button><div class="crumb">PYKLN CLUB <span>/</span> <b id="pageName">Home</b></div><div class="top-right"><span class="status"><i></i> LIVE CENTER</span><button id="accountBtn" class="account-btn" type="button">Sign in</button></div></header>
+<button data-page="players">♙ <span>Players</span></button><button data-page="career">▥ <span>My Career</span></button><button data-page="community">▧ <span>Community Gallery</span></button><button data-page="media">⇧ <span>Media &amp; Uploads</span></button><button data-page="staff">⚙ <span>Organiser</span></button></nav><div class="sidebar-bottom"><span class="online-dot"></span> Powered by Supabase <small>PYKLN Premium · Navy & Gold</small></div></aside>
+<div class="main-wrap"><header class="topbar"><button id="menuToggle" class="icon-btn" aria-label="Toggle menu">☰</button><img class="header-logo" src="pykln-logo.jpg" alt="PYKLN Club"><div class="crumb">PYKLN CLUB <span>/</span> <b id="pageName">Home</b></div><div class="top-right"><span class="status"><i></i> LIVE CENTER</span><button id="layoutToggle" class="theme-toggle" type="button" title="Change layout" aria-label="Change layout">▣</button><button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch to light mode" title="Switch theme"><span aria-hidden="true">☀</span></button><button id="accountBtn" class="account-btn" type="button">Sign in</button></div></header>
 <main id="main">
 <section class="hero"><div><div class="eyebrow">PYKLN CLUB · PICKLEBALL COMMUNITY</div><h1>PLAY. CONNECT. <em>COMPETE. GROW.</em></h1><p>One club. Every rally. Join the community, follow the scores, and grow with every tournament.</p><div class="hero-actions"><button class="primary" data-go="scores">Explore live scores ↗</button><button class="outline" data-go="tournaments">View tournaments</button></div></div><div class="hero-art"><div class="court"><span class="court-line"></span><span class="ball">●</span></div><div class="art-caption">PLAY • CONNECT • COMPETE</div></div></section>
 <section class="stats" id="stats"><div class="stat"><span>TOURNAMENTS</span><strong id="countT">—</strong><small>On the calendar</small></div><div class="stat"><span>LIVE MATCHES</span><strong id="countL">—</strong><small>Happening now</small></div><div class="stat"><span>COMPLETED</span><strong id="countC">—</strong><small>Matches played</small></div><div class="stat"><span>REGISTERING</span><strong id="countR">—</strong><small>Open tournaments</small></div></section>
@@ -21,5 +21,5 @@
 <div class="tabs" role="tablist"><button class="selected" data-tab="live">● Live Matches <span id="tabLive">0</span></button><button data-tab="completed">Completed</button><button data-tab="upcoming">Upcoming</button></div><div id="matchList" class="match-grid"></div></section>
 <section class="section"><div class="section-heading"><div><div class="eyebrow">WHAT'S NEXT</div><h2>Open registrations</h2></div><button class="text-link" data-go="register">View all ↗</button></div><div id="registrationList" class="event-grid"></div></section>
 <section class="section"><div class="section-heading"><div><div class="eyebrow">PYKLN EVENTS</div><h2>Tournament calendar</h2></div><button class="text-link" data-go="tournaments">See tournaments ↗</button></div><div id="tournamentList" class="event-grid"></div></section>
-</main><footer>© <span id="year"></span> PYKLN CLUB · MADE FOR THE GAME <span>VISAKHAPATNAM, INDIA</span></footer></div></div>
-<div class="toast" id="toast" role="status"></div><script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="auth.js"></script><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script src="staff.js"></script><script src="app.js"></script></body></html>
+</main><footer>© <span id="year"></span> PYKLN CLUB · MADE FOR THE GAME <span>VISAKHAPATNAM, INDIA</span></footer></div></div></div>
+<div class="toast" id="toast" role="status"></div><script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="auth.js"></script><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script src="staff.js?v=20261124"></script><script src="media.js?v=1"></script><script src="app.js?v=20261124"></script></body></html>

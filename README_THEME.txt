@@ -1,0 +1,1 @@
+Theme update: upload index.html, styles.css and theme.js to your existing GitHub repository. Keep config.js unchanged. No SQL changes required for the theme. Dark is default; selection is stored locally in the browser. Other files are retained from the Logo Gallery Update.
