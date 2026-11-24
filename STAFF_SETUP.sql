@@ -1,0 +1,33 @@
+create table if not exists public.pykln_staff(user_id uuid primary key references auth.users(id), role text not null check(role in ('admin','scorer')), court int check(court between 1 and 99), active boolean not null default true);
+create or replace function public.pykln_admin() returns boolean language sql stable security definer set search_path='' as $$ select exists(select 1 from public.pykln_staff where user_id=auth.uid() and active and role='admin') $$;
+create or replace function public.pykln_court(c int) returns boolean language sql stable security definer set search_path='' as $$ select exists(select 1 from public.pykln_staff where user_id=auth.uid() and active and (role='admin' or court=c)) $$;
+alter table public.pykln_staff enable row level security;
+grant select,insert,update,delete on public.pykln_staff to authenticated;
+create policy staff_read on public.pykln_staff for select to authenticated using(user_id=auth.uid() or public.pykln_admin());
+create policy staff_manage on public.pykln_staff for all to authenticated using(public.pykln_admin()) with check(public.pykln_admin());
+create table public.pykln_fixtures(id uuid primary key default gen_random_uuid(), event text not null, stage text not null, court int not null check(court>0), team1 text not null, team2 text not null, players1 text not null default '', players2 text not null default '', target int not null default 11 check(target in (11,15,21)), score1 int not null default 0 check(score1>=0), score2 int not null default 0 check(score2>=0), status text not null default 'upcoming' check(status in ('upcoming','live','paused','completed')), scheduled_at timestamptz, updated_at timestamptz default now());
+alter table public.pykln_fixtures enable row level security;
+grant select on public.pykln_fixtures to anon,authenticated;
+grant insert,update,delete on public.pykln_fixtures to authenticated;
+create policy fixture_read on public.pykln_fixtures for select using(true);
+create policy fixture_admin on public.pykln_fixtures for all to authenticated using(public.pykln_admin()) with check(public.pykln_admin());
+create unique index pykln_one_live on public.pykln_fixtures(court) where status in ('live','paused');
+create table public.pykln_score_audit(id bigint generated always as identity primary key, fixture_id uuid, actor uuid, old_state jsonb, new_state jsonb, at timestamptz default now());
+alter table public.pykln_score_audit enable row level security;
+grant select on public.pykln_score_audit to authenticated;
+create policy audit_read on public.pykln_score_audit for select to authenticated using(public.pykln_admin());
+create or replace function public.pykln_score(fid uuid, action text) returns void language plpgsql security definer set search_path='' as $$
+declare m public.pykln_fixtures; n public.pykln_fixtures;
+begin select * into m from public.pykln_fixtures where id=fid for update; if not found or not public.pykln_court(m.court) then raise exception 'Access denied'; end if; n:=m;
+if action='start' and m.status in ('upcoming','paused') then n.status:='live';
+elsif action='pause' and m.status='live' then n.status:='paused';
+elsif m.status='live' and action in ('a','b','undo_a','undo_b') then n.score1:=greatest(0,m.score1+case action when 'a' then 1 when 'undo_a' then -1 else 0 end); n.score2:=greatest(0,m.score2+case action when 'b' then 1 when 'undo_b' then -1 else 0 end); if greatest(n.score1,n.score2)>=m.target then n.status:='completed'; end if;
+elsif action='reopen' and public.pykln_admin() and m.status='completed' then n.status:='paused'; n.score1:=least(n.score1,n.target-1); n.score2:=least(n.score2,n.target-1);
+else raise exception 'Invalid action'; end if;
+update public.pykln_fixtures set score1=n.score1,score2=n.score2,status=n.status,updated_at=now() where id=fid;
+insert into public.pykln_score_audit(fixture_id,actor,old_state,new_state) values(fid,auth.uid(),to_jsonb(m),to_jsonb(n)); end $$;
+revoke all on function public.pykln_score(uuid,text) from public; grant execute on function public.pykln_score(uuid,text) to authenticated;
+create or replace view public.pykln_public_players as select id,first_name,last_name,dupr_id,avatar_url from public.player_profiles;
+grant select on public.pykln_public_players to anon,authenticated;
+-- Bootstrap: replace UUID below with your own verified Authentication > Users UUID, then run separately.
+-- insert into public.pykln_staff(user_id,role) values ('YOUR-UUID','admin');
